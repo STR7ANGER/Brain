@@ -54,3 +54,9 @@
   cursor: pointer;
   font-size: 12px;
 }
+
+.save-to-brain-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}

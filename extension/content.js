@@ -106,7 +106,10 @@ async function handleSaveClick(container, button) {
     const html = `
       <div><strong>Saved to Brain</strong></div>
       <div>brain/${data.brainId}</div>
-      <button id="save-to-brain-copy">Copy cURL</button>
+      <div class="save-to-brain-actions">
+        <button id="save-to-brain-copy">Copy cURL</button>
+        <button id="save-to-brain-copy-prompt">Copy Prompt</button>
+      </div>
     `;
     showToast(container, html, true);
 
@@ -116,6 +119,32 @@ async function handleSaveClick(container, button) {
         await navigator.clipboard.writeText(curlCmd);
         copyBtn.textContent = "Copied";
         setTimeout(() => (copyBtn.textContent = "Copy cURL"), 2000);
+      };
+    }
+
+    const copyPromptBtn = container.querySelector("#save-to-brain-copy-prompt");
+    if (copyPromptBtn) {
+      copyPromptBtn.onclick = async () => {
+        copyPromptBtn.textContent = "Fetching...";
+        try {
+          const promptRes = await fetch(`${baseUrl}/brain/${data.brainId}/context`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${settings.apiKey}`,
+            },
+          });
+          if (!promptRes.ok) {
+            const errText = await promptRes.text();
+            throw new Error(errText);
+          }
+          const promptText = await promptRes.text();
+          await navigator.clipboard.writeText(promptText);
+          copyPromptBtn.textContent = "Copied";
+          setTimeout(() => (copyPromptBtn.textContent = "Copy Prompt"), 2000);
+        } catch (err) {
+          copyPromptBtn.textContent = "Copy Prompt";
+          showToast(container, `Copy prompt failed: ${err.message}`, false);
+        }
       };
     }
   } catch (err) {

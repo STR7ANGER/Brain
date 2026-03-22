@@ -105,21 +105,119 @@ app.get("/brain/:id/context", requireAuth, async (req, res) => {
       [sessionId]
     );
 
-    const ranked = rankChunks(chunksRes.rows).slice(0, MAX_CONTEXT_BULLETS);
+    const fluffPatterns = [
+      /if you want/i,
+      /just tell me/i,
+      /let me know/i,
+      /got it/i,
+      /happy to/i,
+      /i can/i,
+      /i could/i,
+      /i will/i,
+      /we can/i,
+      /should we/i,
+      /would you like/i,
+    ];
+
+    const filtered = chunksRes.rows.filter((chunk) => {
+      if (!chunk || !chunk.content) return false;
+      return !fluffPatterns.some((re) => re.test(chunk.content));
+    });
+
+    const quotas = {
+      decision: 5,
+      task: 5,
+      tech: 5,
+      idea: 3,
+      other: 2,
+    };
+
+    const grouped = {
+      decision: [],
+      task: [],
+      tech: [],
+      idea: [],
+      other: [],
+    };
+
+    for (const chunk of filtered) {
+      const type = grouped[chunk.type] ? chunk.type : "other";
+      grouped[type].push(chunk);
+    }
+
+    for (const key of Object.keys(grouped)) {
+      grouped[key] = rankChunks(grouped[key]).slice(0, quotas[key]);
+    }
+
+    const totalTarget = MAX_CONTEXT_BULLETS;
+
+    let selected = [
+      ...grouped.decision,
+      ...grouped.task,
+      ...grouped.tech,
+      ...grouped.idea,
+      ...grouped.other,
+    ];
+
+    if (selected.length > totalTarget) {
+      const trimmed = rankChunks(selected).slice(0, totalTarget);
+      const keepIds = new Set(trimmed.map((c) => c.id));
+      for (const key of Object.keys(grouped)) {
+        grouped[key] = grouped[key].filter((c) => keepIds.has(c.id));
+      }
+      selected = trimmed;
+    } else {
+      const selectedIds = new Set(selected.map((c) => c.id));
+      const remaining = rankChunks(filtered.filter((c) => !selectedIds.has(c.id)));
+      while (selected.length < totalTarget && remaining.length > 0) {
+        selected.push(remaining.shift());
+      }
+    }
     const projectName = session.project || "untitled";
 
     const lines = [];
+    lines.push("SYSTEM:");
+    lines.push("- Start implementation immediately using reasonable assumptions.");
+    lines.push("- Do not ask questions unless blocked.");
+    lines.push("- Focus on producing working code first, then refinement.");
+    lines.push("");
+    lines.push("USER:");
     lines.push(`Project: ${projectName}`);
     lines.push("");
-    lines.push("Context:");
-    for (const chunk of ranked) {
-      lines.push(`- ${chunk.content}`);
+
+    function pushSection(title, items) {
+      if (!items || items.length === 0) return;
+      lines.push(`${title}:`);
+      for (const item of items) {
+        lines.push(`- ${item.content}`);
+      }
+      lines.push("");
     }
-    lines.push("");
-    lines.push("Task:");
-    lines.push(
-      "Start implementation immediately using reasonable assumptions. Do not ask questions unless blocked."
+
+    pushSection("Decisions", grouped.decision);
+    pushSection("Tasks", grouped.task);
+    pushSection("Tech", grouped.tech);
+    pushSection("Ideas", grouped.idea);
+    pushSection("Other", grouped.other);
+
+    const extra = selected.filter(
+      (item) =>
+        !grouped.decision.includes(item) &&
+        !grouped.task.includes(item) &&
+        !grouped.tech.includes(item) &&
+        !grouped.idea.includes(item) &&
+        !grouped.other.includes(item)
     );
+    if (extra.length > 0) {
+      lines.push("Additional Context:");
+      for (const item of extra) {
+        lines.push(`- ${item.content}`);
+      }
+      lines.push("");
+    }
+
+    lines.push("Task:");
+    lines.push("Start implementation immediately using reasonable assumptions. Do not ask questions unless blocked.");
 
     res.type("text/plain").send(lines.join("\n"));
   } catch (err) {
