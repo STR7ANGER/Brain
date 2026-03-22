@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Save to Brain</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="card">
+      <h1>Save to Brain</h1>
+      <p id="subtitle">Sign in to continue.</p>
+
+      <div id="settings-warning" class="warning" style="display: none;">
+        API Base URL not set. Please open settings.
+        <button id="open-settings">Open Settings</button>
+      </div>
+
+      <div id="auth-view">
+        <label>
+          Email
+          <input id="email" type="email" placeholder="you@example.com" />
+        </label>
+        <button id="send-otp" disabled>Send OTP</button>
+
+        <div id="otp-section" style="display: none;">
+          <label>
+            OTP Code
+            <input id="otp" type="text" placeholder="123456" />
+          </label>
+          <button id="verify-otp" disabled>Verify</button>
+        </div>
+      </div>
+
+      <div id="history-view" style="display: none;">
+        <div class="row">
+          <div class="email" id="user-email"></div>
+          <button id="logout">Logout</button>
+        </div>
+        <div class="row">
+          <button id="refresh-history">Refresh History</button>
+        </div>
+        <div id="history-list"></div>
+      </div>
+
+      <div id="status" class="status"></div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

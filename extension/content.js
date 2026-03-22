@@ -1,7 +1,7 @@
 const STORAGE_KEYS = {
   apiBaseUrl: "apiBaseUrl",
-  apiKey: "apiKey",
-  project: "project",
+  authToken: "authToken",
+  userEmail: "userEmail",
 };
 
 function createButton() {
@@ -29,8 +29,8 @@ async function getSettings() {
     chrome.storage.sync.get(Object.values(STORAGE_KEYS), (items) => {
       resolve({
         apiBaseUrl: items.apiBaseUrl || "",
-        apiKey: items.apiKey || "",
-        project: items.project || "",
+        authToken: items.authToken || "",
+        userEmail: items.userEmail || "",
       });
     });
   });
@@ -68,10 +68,18 @@ async function handleSaveClick(container, button) {
   button.textContent = "Saving...";
   try {
     const settings = await getSettings();
-    if (!settings.apiBaseUrl || !settings.apiKey) {
+    if (!settings.apiBaseUrl) {
       showToast(
         container,
-        "Missing API base URL or API key. Set them in extension options.",
+        "Missing API base URL. Set it in extension options.",
+        false
+      );
+      return;
+    }
+    if (!settings.authToken) {
+      showToast(
+        container,
+        "Please log in via the extension popup before saving.",
         false
       );
       return;
@@ -88,9 +96,9 @@ async function handleSaveClick(container, button) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${settings.apiKey}`,
+        Authorization: `Bearer ${settings.authToken}`,
       },
-      body: JSON.stringify({ project: settings.project || undefined, messages }),
+      body: JSON.stringify({ project: undefined, messages }),
     });
 
     if (!res.ok) {
@@ -102,7 +110,7 @@ async function handleSaveClick(container, button) {
     const data = await res.json();
     const curlCmd =
       data.curl ||
-      `curl -H \"Authorization: Bearer ${settings.apiKey}\" ${baseUrl}/brain/${data.brainId}/context`;
+      `curl -H \"Authorization: Bearer ${settings.authToken}\" ${baseUrl}/brain/${data.brainId}/context`;
     const html = `
       <div><strong>Saved to Brain</strong></div>
       <div>brain/${data.brainId}</div>
@@ -130,7 +138,7 @@ async function handleSaveClick(container, button) {
           const promptRes = await fetch(`${baseUrl}/brain/${data.brainId}/context`, {
             method: "GET",
             headers: {
-              Authorization: `Bearer ${settings.apiKey}`,
+              Authorization: `Bearer ${settings.authToken}`,
             },
           });
           if (!promptRes.ok) {

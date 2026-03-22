@@ -9,6 +9,9 @@
     "https://*.openai.com/*",
     "https://chatgpt.com/*"
   ],
+  "action": {
+    "default_popup": "popup.html"
+  },
   "content_scripts": [
     {
       "matches": [
