@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Save to Brain",
+  "version": "0.1.0",
+  "description": "Capture ChatGPT conversations and store them as reusable context.",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": [
+    "https://chat.openai.com/*",
+    "https://*.openai.com/*",
+    "https://chatgpt.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chat.openai.com/*",
+        "https://*.openai.com/*",
+        "https://chatgpt.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ],
+  "options_page": "options.html"
+}
