@@ -95,7 +95,6 @@ async function fetchHistory(baseUrl, token) {
       <div class="history-meta">Expires in ${formatExpires(item.expiresIn)}</div>
       <div class="history-actions">
         <button data-action="copy-url" data-url="${item.url}">Copy URL</button>
-        <button data-action="copy-prompt" data-id="${item.brainId}">Copy Prompt</button>
       </div>
     `;
     historyList.appendChild(div);
@@ -245,26 +244,6 @@ async function init() {
       if (!url) return;
       await navigator.clipboard.writeText(url);
       setStatus("URL copied.");
-      return;
-    }
-
-    if (action === "copy-prompt") {
-      const brainId = target.dataset.id;
-      if (!brainId) return;
-      try {
-        const res = await fetch(`${baseUrl}/brain/${brainId}/context`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(text || "Failed to fetch prompt");
-        }
-        const text = await res.text();
-        await navigator.clipboard.writeText(text);
-        setStatus("Prompt copied.");
-      } catch (err) {
-        setStatus(err.message, true);
-      }
     }
   });
 }

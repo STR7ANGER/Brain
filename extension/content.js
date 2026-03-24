@@ -108,15 +108,11 @@ async function handleSaveClick(container, button) {
     }
 
     const data = await res.json();
-    const curlCmd =
-      data.curl ||
-      `curl -H \"Authorization: Bearer ${settings.authToken}\" ${baseUrl}/brain/${data.brainId}/context`;
     const html = `
       <div><strong>Saved to Brain</strong></div>
       <div>brain/${data.brainId}</div>
       <div class="save-to-brain-actions">
-        <button id="save-to-brain-copy">Copy cURL</button>
-        <button id="save-to-brain-copy-prompt">Copy Prompt</button>
+        <button id="save-to-brain-copy">Copy URL</button>
       </div>
     `;
     showToast(container, html, true);
@@ -124,35 +120,9 @@ async function handleSaveClick(container, button) {
     const copyBtn = container.querySelector("#save-to-brain-copy");
     if (copyBtn) {
       copyBtn.onclick = async () => {
-        await navigator.clipboard.writeText(curlCmd);
+        await navigator.clipboard.writeText(`${baseUrl}/brain/${data.brainId}/context`);
         copyBtn.textContent = "Copied";
-        setTimeout(() => (copyBtn.textContent = "Copy cURL"), 2000);
-      };
-    }
-
-    const copyPromptBtn = container.querySelector("#save-to-brain-copy-prompt");
-    if (copyPromptBtn) {
-      copyPromptBtn.onclick = async () => {
-        copyPromptBtn.textContent = "Fetching...";
-        try {
-          const promptRes = await fetch(`${baseUrl}/brain/${data.brainId}/context`, {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${settings.authToken}`,
-            },
-          });
-          if (!promptRes.ok) {
-            const errText = await promptRes.text();
-            throw new Error(errText);
-          }
-          const promptText = await promptRes.text();
-          await navigator.clipboard.writeText(promptText);
-          copyPromptBtn.textContent = "Copied";
-          setTimeout(() => (copyPromptBtn.textContent = "Copy Prompt"), 2000);
-        } catch (err) {
-          copyPromptBtn.textContent = "Copy Prompt";
-          showToast(container, `Copy prompt failed: ${err.message}`, false);
-        }
+        setTimeout(() => (copyBtn.textContent = "Copy URL"), 2000);
       };
     }
   } catch (err) {
